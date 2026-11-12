@@ -1,0 +1,1080 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frucht Ahoi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=Outfit:wght@500&display=swap">
+<style>
+/* GenTwo Design System: white-first, neutral ink, zero radius, leaf hues only for the cargo graphics. */
+
+:root{
+  --background:#FBCEFF; --foreground:#0A0A0A;
+  --card:#FEE7FF; --muted:#FEE7FF; --muted-foreground:#404040;
+  --primary:#171717; --primary-foreground:#FAFAFA;
+  --border:#FB73FF; --ring:#525252;
+  --destructive:#C3121E; --success:#088D45; --warning:#BB5502;
+  --leaf-yellow:#F8F320; --leaf-magenta:#E643EA; --leaf-orange:#F9A40B;
+  --font-sans:"DM Sans",ui-sans-serif,system-ui,sans-serif;
+  --font-heading:"Outfit",ui-sans-serif,system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--background);color:var(--foreground);font-family:var(--font-sans);font-size:14px;line-height:1.34;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--font-heading);font-weight:500;font-synthesis-weight:none;letter-spacing:-0.02em;margin:0;line-height:1.27}
+p{margin:0}
+*:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+::selection{background:#FFFA1E}
+
+.page{max-width:1280px;margin:0 auto;padding:24px 16px 48px;display:flex;flex-direction:column;gap:24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:16px}
+.top svg{height:22px;width:auto;display:block}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted-foreground)}
+.intro{display:flex;flex-direction:column;gap:8px}
+.intro h1{font-size:clamp(56px,10vw,112px);line-height:1;letter-spacing:-0.03em}
+.intro p{font-size:16px;line-height:24px;max-width:62ch}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+.game{display:flex;flex-direction:column;gap:12px;min-width:0}
+
+.hud{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--border)}
+.hud > div{padding:12px 16px;display:flex;flex-direction:column;gap:4px;border-left:1px solid var(--border);min-width:0}
+.hud > div:first-child{border-left:0}
+.hud .k{font-size:12px;line-height:16px;color:var(--muted-foreground)}
+.hud .v{font-family:var(--font-heading);font-weight:500;font-size:24px;line-height:32px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.hud .v.low{color:var(--destructive)}
+.pips{display:flex;gap:4px;align-items:center;height:32px}
+.pips i{width:14px;height:14px;background:var(--foreground);display:block}
+.pips i.off{background:transparent;border:1px solid #B615B4}
+
+.stage{position:relative;border:1px solid var(--border);background:var(--background)}
+canvas{display:block;width:100%;height:auto;aspect-ratio:960/560;touch-action:none;cursor:crosshair}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(251,206,255,.86);padding:16px}
+.overlay[hidden]{display:none}
+.panel{background:var(--foreground);color:#FAFAFA;padding:32px;max-width:440px;width:100%;display:flex;flex-direction:column;gap:16px}
+.panel h2{font-size:30px;line-height:36px}
+.panel p{font-size:16px;line-height:24px;color:#FAFAFA}
+.panel .big{font-family:var(--font-heading);font-size:48px;line-height:48px;font-variant-numeric:tabular-nums}
+.panel .btn{align-self:flex-start;background:#FAFAFA;color:#0A0A0A}
+.panel .btn:hover{background:#D4D4D4}
+.panel .meta{font-size:12px;color:#D4D4D4}
+
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 20px;font:500 14px/1 var(--font-sans);border:1px solid transparent;border-radius:0;cursor:pointer;transition:background .15s,color .15s}
+.btn kbd{font:500 11px/1 var(--font-sans);border:1px solid currentColor;padding:3px 5px;opacity:.7}
+.btn.default{background:var(--primary);color:var(--primary-foreground)}
+.btn.default:hover{background:#404040}
+.btn.outline{background:var(--background);border-color:var(--border);color:var(--foreground)}
+.btn.outline:hover{background:var(--muted)}
+.btn.ghost{background:transparent;color:var(--foreground)}
+.btn.ghost:hover{background:var(--muted)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.fill{flex:1 1 220px;display:flex;flex-direction:column;gap:6px;min-width:180px}
+.fill .row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+.bar{position:relative;height:8px;background:#FEF4FF}
+.bar b{position:absolute;inset:0 auto 0 0;background:var(--foreground);width:0}
+.bar::after{content:"";position:absolute;left:25%;top:-3px;bottom:-3px;width:1px;background:var(--ring)}
+.status{min-height:40px;padding:10px 16px;background:var(--muted);font-size:14px;line-height:20px}
+.status.bad{background:color-mix(in oklch,var(--destructive) 10%,transparent);color:var(--destructive)}
+.status.good{background:color-mix(in oklch,var(--success) 10%,transparent);color:var(--success)}
+
+aside{display:flex;flex-direction:column;gap:16px}
+.card{border:1px solid var(--border);background:var(--card);padding:24px;display:flex;flex-direction:column;gap:12px}
+.card h2{font-size:18px;line-height:28px;letter-spacing:0}
+.card ol,.card ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.legend{display:flex;flex-direction:column;gap:8px}
+.legend div{display:flex;align-items:center;gap:10px}
+.sw{width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;flex:none}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center}
+.keys kbd{font:500 12px/1 var(--font-sans);border:1px solid var(--foreground);padding:4px 6px;white-space:nowrap;justify-self:start}
+
+@media (max-width:1000px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  .hud{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hud > div{border-left:0;border-top:1px solid var(--border)}
+  .hud > div:nth-child(-n+2){border-top:0}
+  .hud > div:nth-child(even){border-left:1px solid var(--border)}
+  .hud > div:last-child{grid-column:1/-1;border-left:0}
+  .panel{padding:20px}
+  .panel h2{font-size:24px;line-height:32px}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 286 50" role="img" aria-label="GenTwo"><g transform="translate(-47, -42)" fill="#0A0A0A"><path d="M73.7,66.7c0,9.2,6.3,16.8,15.2,17.5V66.9c0-6.6-3.2-11.9-7.6-15.1C76.9,55,73.7,60.3,73.7,66.7z M55.1,66.7c0,9.7,7.2,17.5,16.9,17.5h2.5c-5.2-3.9-8-10.7-8-17.5c0-6.9,2.9-13.3,8-17.2c-0.8-0.2-1.8-0.3-2.6-0.3C62.3,49.2,55.1,57,55.1,66.7z M306.8,75.5c0-5.3,3.7-9.3,8.9-9.3c5.2,0,8.9,4,8.9,9.3s-3.6,9.3-8.9,9.3C310.5,84.8,306.8,80.8,306.8,75.5z M300.1,75.5c0,8.6,6.8,15.6,15.7,15.6s15.7-6.9,15.7-15.6s-6.8-15.6-15.7-15.6S300.1,66.9,300.1,75.5z M254.9,60.4l9.3,30.2h6.4l6-20.8l6,20.8h6.4l9.3-30.2h-6.8l-5.8,20.5l-5.9-20.5h-6.4l-5.9,20.5l-5.8-20.5H254.9z M228.2,54.5h12.6v36.1h7.1V54.5h12.7v-6.8h-32.3V54.5z M203.4,90.6h6.6V71c1.3-3.1,3.9-4.9,7.2-4.9c4.5,0,6.9,3.2,6.9,7.5v17h6.6V72.8c0-7.7-4.8-12.8-12.2-12.8c-3.2,0-6.4,1-8.5,3.3v-2.8h-6.6V90.6z M174.3,72c1-4.7,4.9-6.5,8-6.5c4,0,7.4,2.2,8,6.5H174.3z M167.4,75.5c0,8.9,6.9,15.6,15.4,15.6c5.5,0,10.1-2.4,12.7-5.7l-4.8-4.1c-1.7,2.1-4.4,3.7-8,3.7c-4.2,0-8.3-2.9-8.8-8h23.3c0.5-10.1-5.5-16.9-14.6-16.9C174,59.9,167.4,66.7,167.4,75.5z M123.2,69.1c0,12.3,9.7,21.9,21.9,21.9c7.3,0,13.6-2.7,16.8-6.3V65.5h-19v6.6H155v9.3c-2.2,1.6-5.6,2.8-9.9,2.8c-8.5,0-14.8-6.6-14.8-15.1S136.6,54,145.1,54c4.9,0,8.6,1.8,11.4,5l5.2-4.4c-3.7-4.4-9.7-7.4-16.6-7.4C132.9,47.3,123.2,56.8,123.2,69.1z M88,49.5c5.2,3.9,7.9,10.3,7.9,17.2v17.5h11.6V66.9c0-9.7-7.2-17.7-16.9-17.7C89.8,49.2,88.8,49.3,88,49.5z M48,66.7c0-13.5,10.5-23.8,23.4-23.8c3.9,0,7.7,1,10,2.2c2.3-1.3,6-2.2,9.8-2.2c12.8,0,23.3,10,23.3,23.8v23.9H72C58.6,90.6,48,80.2,48,66.7z"/></g></svg>
+    <span class="eyebrow">Zukunftstag</span>
+  </header>
+
+  <section class="intro">
+    <h1>Frucht Ahoi</h1>
+    <p>Fang Früchte im Container auf, belade das Schiff, ohne dass etwas kippt, und steuere es heil über das Meer.</p>
+  </section>
+
+  <div class="layout">
+    <div class="game">
+      <div class="hud">
+        <div><span class="k">Punkte</span><span class="v" id="hudScore">0</span></div>
+        <div><span class="k">Schiff</span><span class="v" id="hudShip">1</span></div>
+        <div><span class="k">Abfahrt in</span><span class="v" id="hudTime">–</span></div>
+        <div><span class="k">Fehlversuche übrig</span><span class="pips" id="hudLives" aria-label="5 von 5"></span></div>
+        <div><span class="k">Rekord</span><span class="v" id="hudBest">0</span></div>
+      </div>
+
+      <div class="stage">
+        <canvas id="cv" width="960" height="560" aria-label="Spielfeld: Kai mit Container links, Schiff rechts"></canvas>
+        <div class="overlay" id="overlay">
+          <div class="panel">
+            <h2 id="ovTitle">Der Hafen wartet</h2>
+            <p class="big" id="ovBig" hidden></p>
+            <p id="ovText">Bewege den Container unter die fallenden Früchte. Ist er mindestens zu einem Viertel voll, holt der Kran ihn ab. Du bestimmst, wo er auf dem Schiff landet, und steuerst das Schiff danach über das Meer.</p>
+            <button class="btn" id="ovBtn" type="button">Spiel starten</button>
+            <p class="meta" id="ovMeta">Maus, Finger oder Pfeiltasten. Leertaste ruft den Kran.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn default" id="btnCrane" type="button" disabled>Kran rufen <kbd>Leertaste</kbd></button>
+        <button class="btn outline" id="btnDepart" type="button" disabled>Schiff ablegen <kbd>S</kbd></button>
+        <button class="btn ghost" id="btnPause" type="button" disabled>Pause <kbd>P</kbd></button>
+        <div class="fill">
+          <div class="row"><span>Füllstand</span><span id="fillTxt">0 % · 0 t</span></div>
+          <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="fillBar"><b id="fillB"></b></div>
+        </div>
+      </div>
+      <div class="status" id="status" role="status" aria-live="polite">Starte das Spiel, um den ersten Container zu füllen.</div>
+    </div>
+
+    <aside>
+      <div class="card">
+        <h2>So geht's</h2>
+        <ol>
+          <li>Schiebe den Container unter die Fracht. Was daneben fällt oder am Rand abprallt, kostet einen Fehlversuch.</li>
+          <li>Stapel die Früchte dicht. Passt eine nicht mehr hinein, springt sie wieder heraus.</li>
+          <li>Schon ab einem Viertel Füllung kannst du den Kran rufen. Volle Container bringen mehr Tonnen und damit mehr Punkte.</li>
+          <li>Wähle einen der vier Stellplätze auf dem Schiff.</li>
+          <li>Lass das Schiff ablegen, bevor die Zeit abläuft. Je mehr Container an Bord, desto höher der Bonus.</li>
+          <li>Steuere das Schiff auf dem Meer an Inseln, Felsen, Wirbelstürmen und Schwimmern vorbei. Schwimmer wechseln plötzlich die Richtung, und der grosse Wal schwimmt auf das Schiff zu und verschluckt es. Die Punkte gibt es erst im Zielhafen.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h2>Regeln an Bord</h2>
+        <ul>
+          <li>Schwer nach unten: Ein Container darf höchstens 5 t schwerer sein als der direkt unter ihm. Sonst kippt er ins Wasser.</li>
+          <li>Gleichgewicht halten: Liegt zu viel Gewicht auf einer Seite, bekommt das Schiff Schlagseite und verliert die ganze Ladung.</li>
+          <li>Höchstens vier Container pro Stapel.</li>
+          <li>Auf See lenkt ein schweres Schiff träger, und schiefe Ladung zieht es zur Seite.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Fracht</h2>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="card">
+        <h2>Steuerung</h2>
+        <div class="keys">
+          <kbd>← →</kbd><span>Container bewegen, Stellplatz wählen</span>
+          <kbd>Leertaste</kbd><span>Kran rufen, Stellplatz bestätigen</span>
+          <kbd>1 – 4</kbd><span>Stellplatz direkt wählen</span>
+          <kbd>Esc</kbd><span>Kran wieder wegschicken</span>
+          <kbd>S</kbd><span>Schiff ablegen</span>
+          <kbd>↑ ↓</kbd><span>Schiff auf dem Meer steuern</span>
+          <kbd>Leertaste</kbd><span>Auf dem Meer: Flugzeugabsturz, das Spiel ist fertig</span>
+          <kbd>P</kbd><span>Pause</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const W = 960, H = 560;
+const C = { ink:'#0A0A0A', n900:'#171717', n700:'#404040', n600:'#525252', n500:'#737373', n400:'#A3A3A3', n300:'#D4D4D4', n200:'#E5E5E5', n100:'#F5F5F5', n50:'#FAFAFA', white:'#FFFFFF',
+  bg:'#FBCEFF', bgSoft:'#FFFFFF', water:'#38BCF8', waterLine:'#028AC7', sea:'#38BCF8', seaLight:'#7DD5FC', sand:'#FFEB85', leaf:'#05B454', leafDark:'#0C6F3A', quay:'#D4D4D4', sun:'#FFFA1E', yellow:'#F8F320', orange:'#F9A40B', magenta:'#E643EA', red:'#C3121E', green:'#088D45' };
+const SANS = '"DM Sans", ui-sans-serif, system-ui, sans-serif';
+const HEAD = '"Outfit", ui-sans-serif, system-ui, sans-serif';
+
+// Scene geometry
+const BEAM = 56, QUAY = 470, QUAY_R = 540, WATER = 500;
+const MIN_FILL = 0.25, CW = 210, CH = 120, WALL = 5, FLOORT = 5, INNER_W = CW - 2 * WALL, INNER_H = CH - FLOORT;
+const BOX_MIN = 56, BOX_MAX = 520 - CW, SPAWN_L = 64, SPAWN_R = 512, GRACE = 7;
+const SHIP_CX = 752, DECK_Y = 456, SLOT = 86, SW = 84, SH = 52, MAX_STACK = 4;
+const TOL = 5, LIMIT = 45, MAX_LIVES = 5, CARRY_Y = BEAM + 30;
+
+const TYPES = [
+  { kind:'lemon',      name:'Zitrone',       w:36, h:28, t:1 },
+  { kind:'strawberry', name:'Erdbeere',      w:28, h:30, t:1 },
+  { kind:'duck',       name:'Gummiente',     w:40, h:36, t:1 },
+  { kind:'orange',     name:'Orange',        w:34, h:34, t:2 },
+  { kind:'banana',     name:'Banane',        w:54, h:26, t:2 },
+  { kind:'pineapple',  name:'Ananas',        w:30, h:52, t:3 },
+  { kind:'melon',      name:'Wassermelone',  w:56, h:44, t:5 },
+];
+const BOXCOLS = ['#028AC7', '#05B454', '#FA3340', '#E27B00', '#DA1EDB'];
+const VY0 = 70, VY1 = H - 60, SX = 180;
+
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+const el = { score:$('hudScore'), ship:$('hudShip'), time:$('hudTime'), lives:$('hudLives'), best:$('hudBest'),
+  overlay:$('overlay'), ovTitle:$('ovTitle'), ovBig:$('ovBig'), ovText:$('ovText'), ovBtn:$('ovBtn'), ovMeta:$('ovMeta'),
+  crane:$('btnCrane'), depart:$('btnDepart'), pause:$('btnPause'), fillTxt:$('fillTxt'), fillB:$('fillB'), fillBar:$('fillBar'), status:$('status') };
+
+let best = 0;
+try { best = parseInt(localStorage.getItem('hafenmeister-best') || '0', 10) || 0; } catch (e) {}
+
+function resize() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = W * dpr; cv.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resize(); window.addEventListener('resize', resize);
+
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+function newBox() { return { x: -CW - 10, items: [], heights: new Int16Array(INNER_W), tons: 0, area: 0 }; }
+function shipTime(no) { return Math.max(45, 85 - (no - 1) * 5); }
+function newShip(no) { return { state:'arriving', x:460, v:0, stacks:[[],[],[],[]], tilt:0, timer:shipTime(no), slide:0, slideV:0, capDir:0, capT:0 }; }
+
+let S = null;
+function newGame() {
+  S = { mode:'play', paused:false, score:0, lives:MAX_LIVES, shipNo:1, box:newBox(), target:200, items:[], fallers:[], fx:[],
+    spawnT:1.2, ship:newShip(1), crane:{ x:300, y:BEAM + 24, job:null }, sel:0, keys:{}, voyage:null, pending:null, arrived:0, cc:0 };
+  say('Der erste Container rollt an. Fang die Fracht auf.');
+}
+const fillOf = box => box.area / (INNER_W * INNER_H);
+const level = () => S.shipNo;
+
+let sayKey = '';
+function say(msg, kind) {
+  if (sayKey === msg + kind) return;
+  sayKey = msg + kind;
+  el.status.textContent = msg;
+  el.status.className = 'status' + (kind ? ' ' + kind : '');
+}
+
+// ---------- Ship rules ----------
+function moment(stacks) {
+  let m = 0;
+  stacks.forEach((st, i) => st.forEach(c => { m += c.t * (i - 1.5); }));
+  return m;
+}
+function evalSlot(i, t) {
+  const st = S.ship.stacks[i];
+  if (st.length >= MAX_STACK) return { full:true };
+  const below = st[st.length - 1];
+  const topple = !!below && t > below.t + TOL;
+  const m = moment(S.ship.stacks) + (topple ? 0 : t * (i - 1.5));
+  return { full:false, topple, m, capsize: Math.abs(m) > LIMIT };
+}
+function shipPoint(lx, ly) {
+  const a = S.ship.tilt * Math.PI / 180, px = SHIP_CX + S.ship.x, py = DECK_Y;
+  return { x: px + lx * Math.cos(a) - ly * Math.sin(a), y: py + lx * Math.sin(a) + ly * Math.cos(a) };
+}
+const slotX = i => (i - 1.5) * SLOT;
+
+// ---------- Actions ----------
+function miss(msg) {
+  S.lives--;
+  say(msg, 'bad');
+  if (S.lives <= 0) gameOver();
+}
+function gameOver() {
+  S.lives = 0; S.mode = 'over';
+  const record = S.score > best;
+  if (record) { best = S.score; try { localStorage.setItem('hafenmeister-best', String(best)); } catch (e) {} }
+  showOverlay('Feierabend im Hafen', S.score + ' Punkte',
+    record && S.score > 0 ? 'Neuer Rekord. Du hast ' + S.arrived + ' Schiffe ans Ziel gebracht.' : 'Du hast ' + S.arrived + ' Schiffe ans Ziel gebracht. Der Rekord liegt bei ' + best + ' Punkten.',
+    'Nochmal spielen');
+}
+function showOverlay(title, big, text, btn) {
+  el.ovTitle.textContent = title;
+  el.ovBig.hidden = !big; el.ovBig.textContent = big || '';
+  el.ovText.textContent = text;
+  el.ovBtn.textContent = btn;
+  el.ovMeta.hidden = true;
+  el.overlay.hidden = false;
+  el.ovBtn.focus({ preventScroll:true });
+}
+function start() { el.overlay.hidden = true; newGame(); }
+function togglePause() {
+  if (!S || S.mode === 'over') return;
+  S.paused = !S.paused;
+  if (S.paused) showOverlay('Pause', '', 'Der Hafen steht still. Die Uhr läuft erst weiter, wenn du zurück bist.', 'Weiterspielen');
+  else el.overlay.hidden = true;
+}
+
+function canCrane() {
+  return S && S.mode === 'play' && !S.paused && S.ship.state === 'docked' && !S.crane.job && fillOf(S.box) >= MIN_FILL
+    && S.ship.stacks.some(st => st.length < MAX_STACK);
+}
+function callCrane() {
+  if (!S || S.mode !== 'play' || S.paused) return;
+  if (!canCrane()) {
+    if (fillOf(S.box) < MIN_FILL) say('Der Container ist noch nicht zu einem Viertel voll.');
+    else if (S.ship.state !== 'docked') say('Warte, bis das Schiff angelegt hat.');
+    else if (S.crane.job) say('Der Kran ist noch unterwegs.');
+    else say('Das Schiff ist voll. Lass es ablegen.');
+    return;
+  }
+  S.mode = 'choose';
+  S.items = S.items.filter(it => it.state !== 'fall');
+  // start on the first slot that is safe, otherwise the first free one
+  let pick = -1, free = -1;
+  for (let i = 0; i < 4; i++) {
+    const e = evalSlot(i, S.box.tons);
+    if (e.full) continue;
+    if (free < 0) free = i;
+    if (pick < 0 && !e.topple && !e.capsize) pick = i;
+  }
+  S.sel = pick >= 0 ? pick : free;
+  say('Wohin mit ' + S.box.tons + ' t? Wähle einen Stellplatz auf dem Schiff.');
+}
+function cancelChoose() {
+  if (S && S.mode === 'choose') { S.mode = 'play'; S.spawnT = 0.6; say('Kran weggeschickt. Weiter füllen.'); }
+}
+function moveSel(d) {
+  for (let k = 1; k <= 4; k++) {
+    const i = (S.sel + d * k + 8) % 4;
+    if (S.ship.stacks[i].length < MAX_STACK) { S.sel = i; return; }
+  }
+}
+function confirmSlot(i) {
+  if (!S || S.mode !== 'choose' || S.paused) return;
+  if (S.ship.stacks[i].length >= MAX_STACK) { say('Dieser Stapel ist voll.'); return; }
+  S.sel = i;
+  S.mode = 'lift';
+  S.crane.job = { phase:0, slot:i, cargo:null, s:1 };
+  say('Der Kran holt den Container ab.');
+}
+function depart(auto) {
+  if (!S || S.paused || S.ship.state !== 'docked' || S.crane.job || S.mode === 'lift' || S.mode === 'over') return;
+  const all = S.ship.stacks.flat();
+  if (!all.length && !auto) { say('Das Schiff ist noch leer.'); return; }
+  if (S.mode === 'choose') S.mode = 'play';
+  S.ship.state = 'leaving';
+  if (!all.length) { say('Das Schiff ist leer abgefahren. Keine Punkte.', 'bad'); return; }
+  const tons = all.reduce((a, c) => a + c.t, 0), n = all.length;
+  const mult = 1 + 0.2 * (n - 1), m = moment(S.ship.stacks);
+  const even = n >= 2 && Math.abs(m) / LIMIT < 0.15;
+  const pts = Math.round(tons * 10 * mult) + (even ? 100 : 0);
+  S.pending = { pts, tons, n, even, m, tops: S.ship.stacks.map(st => st.length ? st[st.length - 1].col : null) };
+  say('Leinen los. ' + tons + ' t in ' + n + ' Containern sind ' + pts + ' Punkte wert, wenn das Schiff heil ankommt.', 'good');
+}
+
+// ---------- Voyage ----------
+function startVoyage() {
+  const p = S.pending, L = level();
+  S.mode = 'voyage'; S.items = []; S.keys = {};
+  S.voyage = { t:0, dur: 14 + Math.min(8, L), speed: 210 + 14 * Math.min(10, L), y: H / 2, ty: H / 2, obs: [], next: 0.8,
+    state:'sail', st:0, scroll:0, keyMode:false, whale:false, vmax: Math.max(140, 330 - p.tons * 1.6), drift: clamp(p.m / LIMIT, -1, 1) * 45, p };
+  say('Steuere an Inseln, Felsen, Wirbelstürmen und Schwimmern vorbei.' + (Math.abs(S.voyage.drift) > 12 ? ' Die schiefe Ladung zieht es zur Seite.' : p.tons > 80 ? ' Mit so viel Ladung lenkt es träge.' : ''));
+}
+function spawnObs() {
+  const v = S.voyage, mk = y => {
+    const q = Math.random();
+    const kind = q < 0.27 ? 'swimmer' : q < 0.5 ? 'storm' : q < 0.72 ? 'rock' : 'island';
+    const o = { kind, storm: kind === 'storm', x: W + 90, y, rot: 0, vy: 0, sx: 0, sy: 0, turn: 0, ph: Math.random() * 6 };
+    o.r = kind === 'storm' ? 42 : kind === 'swimmer' ? 22 : kind === 'rock' ? rnd(18, 27) : rnd(34, 56);
+    if (kind === 'storm') o.vy = rnd(-1, 1) * 80;
+    v.obs.push(o);
+  };
+  const y = Math.random() < 0.55 ? clamp(v.y + rnd(-70, 70), VY0, VY1) : rnd(VY0, VY1);
+  mk(y);
+  if (Math.random() < 0.3 + 0.05 * Math.min(6, level())) {
+    const gap = rnd(200, 260), y2 = y + gap <= VY1 ? y + gap : y - gap;
+    if (y2 >= VY0) mk(y2);
+  }
+}
+function updateVoyage(dt) {
+  const v = S.voyage;
+  if (v.state === 'sail') {
+    v.t += dt; v.scroll += v.speed * dt;
+    const dir = (S.keys.down ? 1 : 0) - (S.keys.up ? 1 : 0);
+    if (dir) { v.keyMode = true; v.ty = clamp(v.y + dir * 300, VY0, VY1); }
+    else if (v.keyMode) v.ty = v.y;
+    v.y = clamp(v.y + clamp(v.ty - v.y, -v.vmax * dt, v.vmax * dt) + v.drift * dt, VY0, VY1);
+    if (v.t < v.dur) { v.next -= dt; if (v.next <= 0) { spawnObs(); v.next = rnd(1.0, 1.5) * Math.max(0.6, 1 - 0.04 * level()); } }
+    if (!v.whale && v.t > v.dur * 0.45) {
+      v.whale = true;
+      v.obs.push({ kind:'whale', storm:false, x: W + 170, y: rnd(VY0 + 40, VY1 - 40), r: 58, rot: 0, vy: 0, sx: 0, sy: 0, turn: 0, ph: 0 });
+      say('Ein riesiger Wal taucht auf und schwimmt auf das Schiff zu.', 'bad');
+    }
+    for (const o of v.obs) {
+      o.x -= v.speed * dt; o.rot += dt * 3;
+      if (o.kind === 'whale') { o.x -= 45 * dt; if (o.x > SX + 230) o.y += clamp(v.y - o.y, -115 * dt, 115 * dt); }
+      if (o.storm) { o.y += o.vy * dt; if (o.y < VY0 || o.y > VY1) { o.vy = -o.vy; o.y = clamp(o.y, VY0, VY1); } }
+      if (o.kind === 'swimmer') {
+        o.turn -= dt; o.ph += dt * 9;
+        if (o.turn <= 0) { const a = rnd(0, 6.2832), sp = rnd(70, 120); o.sx = Math.cos(a) * sp * 0.6; o.sy = Math.sin(a) * sp; o.turn = rnd(0.6, 1.4); }
+        o.x += o.sx * dt; o.y += o.sy * dt;
+        if (o.y < VY0 || o.y > VY1) { o.sy = -o.sy; o.y = clamp(o.y, VY0, VY1); }
+      }
+      const dx = o.x - clamp(o.x, SX - 66, SX + 66), dy = o.y - v.y;
+      if (Math.hypot(dx, dy) < o.r + 17) {
+        v.state = 'crash'; v.st = 0; v.hit = o.kind || (o.storm ? 'storm' : 'island');
+        say({ storm:'Mitten in den Wirbelsturm gefahren.', swimmer:'Achtung, ein Schwimmer. Das Schiff musste hart ausweichen.', rock:'Auf einen Felsen gefahren.', island:'Auf die Insel aufgelaufen.', whale:'Der Wal reisst das Maul auf.' }[v.hit], 'bad');
+        v.hitObj = o;
+        return;
+      }
+    }
+    v.obs = v.obs.filter(o => o.x > -240);
+    if (v.t >= v.dur && v.obs.every(o => o.x < SX - 110)) { v.state = 'arrive'; v.st = 0; }
+  } else if (v.state === 'plane') {
+    v.st += dt; v.scroll += v.speed * dt * 0.3;
+    if (v.st >= 1.3) { v.state = 'crash'; v.st = 0; v.hit = 'plane'; say('Volltreffer. Das Flugzeug ist genau auf das Schiff gestürzt.', 'bad'); }
+  } else if (v.state === 'arrive') {
+    v.st += dt;
+    const sp = v.speed * Math.max(0, 1 - v.st / 1.6);
+    v.scroll += sp * dt; for (const o of v.obs) o.x -= sp * dt;
+    v.y += (H / 2 - v.y) * Math.min(1, dt * 3);
+    if (v.st > 2) finishVoyage(true);
+  } else {
+    v.st += dt;
+    if (v.st > 1.8) finishVoyage(false);
+  }
+}
+function planeCrash() {
+  const v = S && S.voyage;
+  if (!v || v.state !== 'sail' || S.paused) return;
+  v.state = 'plane'; v.st = 0;
+  say('Achtung, ein grosses Flugzeug stürzt ab.', 'bad');
+}
+function finishVoyage(ok) {
+  const p = S.voyage.p, hit = S.voyage.hit;
+  S.voyage = null; S.pending = null; S.mode = 'play'; S.spawnT = 1.2;
+  S.shipNo++; S.ship = newShip(S.shipNo);
+  if (hit === 'plane') { say('Das Flugzeug hat das Schiff versenkt. Das Spiel ist fertig.', 'bad'); gameOver(); return; }
+  if (ok) {
+    S.score += p.pts; S.arrived++;
+    if (p.n >= 3 && S.lives < MAX_LIVES) S.lives++;
+    S.fx.push({ text:'+' + p.pts, x:SHIP_CX, y:220, life:2 });
+    say('Angekommen. ' + p.pts + ' Punkte' + (p.even ? ', davon 100 für gerade Ladung.' : '.') + ' Das nächste Schiff legt an.', 'good');
+  } else {
+    miss({ storm:'Der Wirbelsturm hat das Schiff zerstört.', swimmer:'Beim Ausweichen vor dem Schwimmer ist das Schiff gekentert.', rock:'Der Felsen hat das Schiff aufgerissen.', island:'Die Insel hat das Schiff zerstört.', whale:'Der Wal hat das Schiff verschluckt.' }[hit] + ' Die Ladung ist verloren.');
+  }
+}
+function drawTopShip(p) {
+  ctx.fillStyle = C.ink;
+  ctx.beginPath(); ctx.moveTo(-76, -23); ctx.lineTo(44, -23); ctx.lineTo(80, 0); ctx.lineTo(44, 23); ctx.lineTo(-76, 23); ctx.closePath(); ctx.fill();
+  for (let i = 0; i < 4; i++) {
+    const x = -68 + i * 28;
+    if (p.tops[i]) { ctx.fillStyle = p.tops[i]; ctx.fillRect(x, -16, 25, 32); ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.fillRect(x + 12, -13, 1, 26); }
+    else { ctx.strokeStyle = C.n600; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, -15.5, 24, 31); }
+  }
+}
+function drawVoyage() {
+  const v = S.voyage, TAU = 6.2832;
+  ctx.fillStyle = C.sea; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = C.seaLight;
+  for (let i = 0; i < 30; i++) {
+    const span = W + 80, x = (((i * 137 - v.scroll * (0.8 + (i % 3) * 0.1)) % span) + span) % span - 40;
+    ctx.fillRect(x, 46 + (i * 89) % (H - 66), 28, 3);
+  }
+  for (const o of v.obs) {
+    if (o.kind === 'whale') {
+      const R = o.r, wag = Math.sin(o.rot * 1.2) * 0.25;
+      ctx.save(); ctx.translate(o.x, o.y);
+      ctx.fillStyle = C.seaLight; ctx.beginPath(); ctx.ellipse(0, 0, R * 1.55, R * 0.95, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#0C506E';
+      ctx.save(); ctx.translate(R * 1.25, 0); ctx.rotate(wag);
+      ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(R * 0.7, -R * 0.7); ctx.lineTo(R * 0.45, 0); ctx.lineTo(R * 0.7, R * 0.7); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      ctx.beginPath(); ctx.ellipse(-R * 0.2, -R * 0.75, R * 0.45, R * 0.16, 0.5, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-R * 0.2, R * 0.75, R * 0.45, R * 0.16, -0.5, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, 0, R * 1.4, R * 0.78, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#FF6872'; ctx.beginPath(); ctx.ellipse(-R * 0.98, 0, R * 0.36, R * 0.5, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = C.white;
+      for (let k = -2; k <= 2; k++) { ctx.fillRect(-R * 0.72, k * R * 0.17 - 3, 7, 6); }
+      ctx.beginPath(); ctx.arc(-R * 0.45, -R * 0.52, 7, 0, TAU); ctx.arc(-R * 0.45, R * 0.52, 7, 0, TAU); ctx.fill();
+      ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(-R * 0.48, -R * 0.52, 3, 0, TAU); ctx.arc(-R * 0.48, R * 0.52, 3, 0, TAU); ctx.fill();
+      ctx.fillStyle = C.seaLight; ctx.beginPath(); ctx.arc(R * 0.25, 0, 6, 0, TAU); ctx.fill();
+      ctx.restore();
+    } else if (o.kind === 'swimmer') {
+      const sw = Math.sin(o.ph) * 9;
+      ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(Math.atan2(o.sy, o.sx - 60));
+      ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(0, 0, o.r + 6, 0, TAU); ctx.fill();
+      ctx.scale(1.5, 1.5);
+      ctx.strokeStyle = '#FFC7CB'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(2, -5); ctx.lineTo(8 + sw, -14); ctx.moveTo(2, 5); ctx.lineTo(8 - sw, 14); ctx.stroke();
+      ctx.fillStyle = '#FFFA1E'; ctx.beginPath(); ctx.ellipse(-6, 0, 10, 6, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#FFC7CB'; ctx.beginPath(); ctx.arc(7, 0, 6, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#FA3340'; ctx.beginPath(); ctx.arc(8.5, 0, 6, -1.57, 1.57); ctx.fill();
+      ctx.restore();
+    } else if (o.kind === 'rock') {
+      ctx.fillStyle = C.seaLight; ctx.beginPath(); ctx.arc(o.x, o.y, o.r + 6, 0, TAU); ctx.fill();
+      ctx.fillStyle = C.n600; ctx.beginPath();
+      for (let k = 0; k < 7; k++) { const a = k * TAU / 7, rr = o.r * (k % 2 ? 0.78 : 1); ctx.lineTo(o.x + Math.cos(a) * rr, o.y + Math.sin(a) * rr); }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = C.n400; ctx.beginPath(); ctx.arc(o.x - o.r * 0.2, o.y - o.r * 0.2, o.r * 0.35, 0, TAU); ctx.fill();
+    } else if (o.storm) {
+      ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot);
+      ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.beginPath(); ctx.arc(0, 0, o.r, 0, TAU); ctx.fill();
+      ctx.strokeStyle = C.white; ctx.lineCap = 'round';
+      for (let k = 0; k < 3; k++) {
+        const a = k * TAU / 3;
+        ctx.lineWidth = 9; ctx.beginPath(); ctx.arc(0, 0, o.r * 0.74, a, a + 1.5); ctx.stroke();
+        ctx.lineWidth = 7; ctx.beginPath(); ctx.arc(0, 0, o.r * 0.42, a + 1, a + 2.5); ctx.stroke();
+      }
+      ctx.fillStyle = C.waterLine; ctx.beginPath(); ctx.arc(0, 0, 6, 0, TAU); ctx.fill();
+      ctx.restore();
+    } else {
+      ctx.fillStyle = C.seaLight; ctx.beginPath(); ctx.arc(o.x, o.y, o.r + 10, 0, TAU); ctx.fill();
+      ctx.fillStyle = C.sand; ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, TAU); ctx.fill();
+      ctx.fillStyle = C.leaf; ctx.beginPath(); ctx.arc(o.x - o.r * 0.12, o.y + o.r * 0.08, o.r * 0.56, 0, TAU); ctx.fill();
+      ctx.fillStyle = C.leafDark; ctx.beginPath(); ctx.arc(o.x + o.r * 0.1, o.y - o.r * 0.14, o.r * 0.22, 0, TAU); ctx.fill();
+    }
+  }
+  if (v.state === 'arrive') {
+    const k = Math.min(1, v.st / 1.6), e = 1 - (1 - k) * (1 - k), px = W - 150 * e;
+    ctx.fillStyle = C.quay; ctx.fillRect(px, 0, 160, H);
+    ctx.fillStyle = C.ink; ctx.fillRect(px, 0, 2, H);
+    txt('Zielhafen', px + 76, H / 2, '500 20px ' + HEAD, C.ink);
+  }
+  // ship
+  ctx.save();
+  if (v.state === 'crash') {
+    const k = v.st / 1.8;
+    if (v.hit === 'plane') {
+      ctx.globalAlpha = Math.max(0, 1 - k * 1.2);
+      ctx.fillStyle = C.sun; ctx.beginPath(); ctx.arc(SX, v.y, 40 + k * 240, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#FFA400'; ctx.beginPath(); ctx.arc(SX, v.y, 24 + k * 150, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#FA3340'; ctx.beginPath(); ctx.arc(SX, v.y, 12 + k * 70, 0, TAU); ctx.fill();
+    }
+    ctx.strokeStyle = C.white; ctx.lineWidth = 3;
+    for (let i = 0; i < 3; i++) { ctx.globalAlpha = Math.max(0, 1 - k); ctx.beginPath(); ctx.arc(SX + 30, v.y, 20 + k * 90 + i * 16, 0, TAU); ctx.stroke(); }
+    if (v.hit === 'whale' && v.hitObj) {
+      const q = Math.min(1, k * 1.5), w = v.hitObj;
+      ctx.globalAlpha = 1;
+      ctx.translate(SX + (w.x - w.r * 0.95 - SX) * q, v.y + (w.y - v.y) * q); ctx.scale(1 - q, 1 - q);
+    } else {
+      ctx.globalAlpha = Math.max(0, 1 - k * 0.9);
+      ctx.translate(SX - k * 30, v.y + k * 16); ctx.rotate(k * 0.9);
+    }
+  } else {
+    const wob = v.state === 'sail' ? clamp((v.ty - v.y) / 200, -1, 1) * 0.16 : 0;
+    ctx.fillStyle = C.white; ctx.globalAlpha = 0.7;
+    ctx.beginPath(); ctx.moveTo(SX - 78, v.y - 12); ctx.lineTo(SX - 150, v.y - 22); ctx.lineTo(SX - 150, v.y + 22); ctx.lineTo(SX - 78, v.y + 12); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.translate(SX, v.y); ctx.rotate(wob);
+  }
+  drawTopShip(v.p);
+  ctx.restore();
+  if (v.state === 'plane' || (v.state === 'crash' && v.hit === 'plane')) {
+    const k = v.state === 'plane' ? Math.min(1, v.st / 1.3) : 1, e = k * k;
+    const ax = W + 160, ay = -160, at = t => [ax + (SX - ax) * t, ay + (v.y - ay) * t];
+    ctx.fillStyle = 'rgba(64,64,64,.4)';
+    for (let i = 1; i < 10; i++) { const t = e - i * 0.045; if (t > 0 && v.state === 'plane') { const q = at(t); ctx.beginPath(); ctx.arc(q[0], q[1], 10 + i * 4, 0, TAU); ctx.fill(); } }
+    const q = at(e), sc = 2.4 - e * 1.1;
+    ctx.save(); ctx.translate(q[0], q[1]); ctx.rotate(Math.atan2(v.y - ay, SX - ax) + (v.state === 'crash' ? v.st * 2 : 0)); ctx.scale(sc, sc);
+    if (v.state === 'crash') ctx.globalAlpha = Math.max(0, 1 - v.st / 1.0);
+    ctx.fillStyle = C.n300;
+    ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-18, -64); ctx.lineTo(-34, -64); ctx.lineTo(-14, 0); ctx.lineTo(-34, 64); ctx.lineTo(-18, 64); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-54, 0); ctx.lineTo(-68, -24); ctx.lineTo(-78, -24); ctx.lineTo(-68, 0); ctx.lineTo(-78, 24); ctx.lineTo(-68, 24); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = C.white; ctx.beginPath(); ctx.ellipse(0, 0, 74, 11, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#FA3340'; ctx.fillRect(-56, -1.5, 100, 3);
+    ctx.fillStyle = C.waterLine; ctx.fillRect(50, -4, 12, 8);
+    ctx.fillStyle = C.n600; ctx.fillRect(-12, -36, 14, 8); ctx.fillRect(-12, 28, 14, 8);
+    ctx.restore();
+  }
+  // progress
+  const x0 = 330, x1 = 630, prog = clamp(v.t / v.dur, 0, 1);
+  ctx.fillStyle = C.ink; ctx.fillRect(x0, 27, x1 - x0, 2);
+  ctx.fillRect(x0 + (x1 - x0) * prog - 5, 21, 10, 14);
+  txt('Hafen', x0 - 12, 29, '600 12px ' + SANS, C.ink, 'right');
+  txt('Ziel', x1 + 12, 29, '600 12px ' + SANS, C.ink, 'left');
+}
+
+function resolvePlacement(job) {
+  const ship = S.ship, st = ship.stacks[job.slot], c = { t: job.cargo.tons, col: BOXCOLS[S.cc++ % BOXCOLS.length] };
+  const below = st[st.length - 1];
+  if (below && c.t > below.t + TOL) {
+    const p = shipPoint(slotX(job.slot), -st.length * SH - SH / 2);
+    const dir = job.slot < 2 ? -1 : 1;
+    S.fallers.push({ x:p.x, y:p.y, vx:dir * 110, vy:-90, rot:0, vr:dir * 2.4, t:c.t, col:c.col });
+    miss(c.t + ' t auf ' + below.t + ' t: zu schwer für den Container darunter. Er ist ins Wasser gekippt.');
+    return;
+  }
+  st.push(c);
+  const m = moment(ship.stacks);
+  if (Math.abs(m) > LIMIT) {
+    ship.state = 'capsizing'; ship.capDir = Math.sign(m); ship.capT = 0;
+    if (S.mode === 'choose') S.mode = 'play';
+    S.lives--;
+    miss('Schlagseite. Das Schiff hat die ganze Ladung verloren.');
+    return;
+  }
+  S.score += 20;
+  const warn = Math.abs(m) / LIMIT > 0.7;
+  say(warn ? 'Abgestellt, aber das Schiff neigt sich stark. Gleiche auf der anderen Seite aus.' : c.t + ' t sicher abgestellt.', warn ? 'bad' : 'good');
+}
+
+// ---------- Update ----------
+function spawn() {
+  const L = level();
+  const ty = TYPES[Math.floor(Math.random() * TYPES.length)];
+  const wind = L >= 3 ? rnd(-1, 1) * Math.min(60, 12 * (L - 1)) : 0;
+  S.items.push({ x: rnd(SPAWN_L, SPAWN_R - ty.w), y: BEAM + 12, w:ty.w, h:ty.h, t:ty.t, kind:ty.kind,
+    vx: wind, vy: Math.min(340, 140 + 18 * L), state:'fall', life:1 });
+}
+
+function storeItem(it) {
+  const box = S.box, il = box.x + WALL;
+  const rx = clamp(Math.round(it.x - il), 0, INNER_W - it.w);
+  let h0 = 0;
+  for (let i = rx; i < rx + it.w; i++) if (box.heights[i] > h0) h0 = box.heights[i];
+  if (h0 + it.h > INNER_H) return false;
+  for (let i = rx; i < rx + it.w; i++) box.heights[i] = h0 + it.h;
+  const restTop = QUAY - FLOORT - h0 - it.h;
+  box.items.push({ rx, ry:h0, w:it.w, h:it.h, t:it.t, kind:it.kind, off: Math.max(0, restTop - it.y), v: it.vy });
+  box.tons += it.t; box.area += it.w * it.h;
+  S.score += 10;
+  return true;
+}
+function bounce(it, msg, free) {
+  const box = S.box;
+  it.state = 'lost';
+  it.vy = -230;
+  it.vx = (it.x + it.w / 2 < box.x + CW / 2 ? -1 : 1) * 150;
+  if (free) say(msg); else miss(msg);
+}
+
+function updateItems(dt) {
+  const box = S.box, rim = QUAY - CH;
+  for (const it of S.items) {
+    if (it.state === 'floor') { it.life -= dt * 1.6; continue; }
+    const prevBottom = it.y + it.h;
+    if (it.state === 'lost') it.vy += 900 * dt;
+    it.x += it.vx * dt; it.y += it.vy * dt;
+    if (it.state !== 'fall') { if (it.y > H + 20) it.life = 0; continue; }
+    if (it.x < SPAWN_L) { it.x = SPAWN_L; it.vx = Math.abs(it.vx); }
+    if (it.x + it.w > SPAWN_R) { it.x = SPAWN_R - it.w; it.vx = -Math.abs(it.vx); }
+    const bottom = it.y + it.h;
+    if (prevBottom <= rim && bottom > rim && it.x + it.w > box.x && it.x < box.x + CW) {
+      const il = box.x + WALL, ir = box.x + CW - WALL;
+      if (it.x < il && il - it.x <= GRACE) it.x = il;
+      else if (it.x + it.w > ir && it.x + it.w - ir <= GRACE) it.x = ir - it.w;
+      if (it.x >= il && it.x + it.w <= ir) {
+        if (storeItem(it)) { it.life = 0; if (S.mode !== 'over') say(hintText()); }
+        else bounce(it, 'Kein Platz mehr an dieser Stelle. Die Frucht ist wieder herausgesprungen. Zeit für den Kran.', true);
+      } else bounce(it, 'Am Rand abgeprallt. Ein Fehlversuch weniger.');
+      if (S.mode === 'over') return;
+      continue;
+    }
+    if (bottom >= QUAY) {
+      it.y = QUAY - it.h; it.state = 'floor'; it.life = 1;
+      miss('Daneben. Ein Fehlversuch weniger.');
+      if (S.mode === 'over') return;
+    }
+  }
+  S.items = S.items.filter(it => it.life > 0);
+}
+function hintText() {
+  const f = fillOf(S.box);
+  if (f >= 0.85) return 'Der Container ist fast voll. Zeit für den Kran.';
+  if (f >= MIN_FILL) return 'Voll genug: Du kannst den Kran rufen oder weiter füllen.';
+  return 'Weiter füllen. Ab einem Viertel Füllung kommt der Kran.';
+}
+
+function updateCrane(dt) {
+  const cr = S.crane, job = cr.job, top = BEAM + 24;
+  if (!job) { cr.y += clamp(top - cr.y, -400 * dt, 400 * dt); return; }
+  const step = (cur, to, sp) => cur + clamp(to - cur, -sp * dt, sp * dt);
+  if (job.phase === 0) {
+    const tx = S.box.x + CW / 2;
+    cr.x = step(cr.x, tx, 800); cr.y = step(cr.y, top, 400);
+    if (Math.abs(cr.x - tx) < 0.5) job.phase = 1;
+  } else if (job.phase === 1) {
+    const ty = QUAY - CH;
+    cr.y = step(cr.y, ty, 620);
+    if (Math.abs(cr.y - ty) < 0.5) {
+      job.cargo = S.box; job.phase = 2;
+      S.box = newBox(); S.mode = 'play'; S.spawnT = 0.9;
+    }
+  } else if (job.phase === 2) {
+    cr.y = step(cr.y, CARRY_Y, 420);
+    job.s = SW / CW + (1 - SW / CW) * clamp((cr.y - CARRY_Y) / (QUAY - CH - CARRY_Y), 0, 1);
+    if (Math.abs(cr.y - CARRY_Y) < 0.5) job.phase = 3;
+  } else if (job.phase === 3) {
+    if (S.ship.state !== 'docked') { // ship gone: drop into the water
+      const p = { x: cr.x, y: cr.y + SH / 2 };
+      S.fallers.push({ x:p.x, y:p.y, vx:0, vy:0, rot:0, vr:0.5, t:job.cargo.tons, col:C.n900 });
+      cr.job = null; return;
+    }
+    const tx = shipPoint(slotX(job.slot), 0).x;
+    cr.x = step(cr.x, tx, 520);
+    if (Math.abs(cr.x - tx) < 0.5) job.phase = 4;
+  } else if (job.phase === 4) {
+    const n = S.ship.stacks[job.slot].length;
+    const p = shipPoint(slotX(job.slot), -n * SH);
+    cr.x = p.x;
+    cr.y = step(cr.y, p.y - SH, 420);
+    if (Math.abs(cr.y - (p.y - SH)) < 0.5) { resolvePlacement(job); cr.job = null; }
+  }
+}
+
+function updateShip(dt) {
+  const sh = S.ship;
+  let target = clamp(moment(sh.stacks) / LIMIT, -1.2, 1.2) * 8;
+  if (sh.state === 'arriving') {
+    sh.x += (0 - sh.x) * Math.min(1, dt * 2.6);
+    if (sh.x < 1.5) { sh.x = 0; sh.state = 'docked'; }
+  } else if (sh.state === 'docked') {
+    sh.timer -= dt;
+    if (sh.timer <= 0) { sh.timer = 0; depart(true); }
+  } else if (sh.state === 'leaving') {
+    sh.v += 260 * dt; sh.x += sh.v * dt;
+    if (sh.x > 480) { if (S.pending) startVoyage(); else { S.shipNo++; S.ship = newShip(S.shipNo); } return; }
+  } else if (sh.state === 'capsizing') {
+    target = sh.capDir * 27;
+    sh.capT += dt; sh.slideV += 520 * dt; sh.slide += sh.slideV * dt;
+    if (sh.capT > 2.4) { S.ship = newShip(S.shipNo); return; }
+  }
+  sh.tilt += (target - sh.tilt) * Math.min(1, dt * 4);
+}
+
+function update(dt) {
+  if (!S || S.paused || S.mode === 'over') return;
+  for (const f of S.fx) { f.life -= dt; f.y -= 22 * dt; }
+  S.fx = S.fx.filter(f => f.life > 0);
+  if (S.voyage) { updateVoyage(dt); return; }
+  // quay container
+  const box = S.box;
+  if (S.mode === 'play') {
+    const dir = (S.keys.right ? 1 : 0) - (S.keys.left ? 1 : 0);
+    if (dir) S.target = clamp(S.target + dir * 560 * dt, BOX_MIN, BOX_MAX);
+    box.x += clamp(clamp(S.target, BOX_MIN, BOX_MAX) - box.x, -1100 * dt, 1100 * dt);
+    S.spawnT -= dt;
+    if (S.spawnT <= 0) { spawn(); S.spawnT = Math.max(0.6, 1.5 - 0.09 * level()) * rnd(0.8, 1.25); }
+  }
+  for (const it of box.items) if (it.off > 0) { it.v += 900 * dt; it.off = Math.max(0, it.off - it.v * dt); }
+  updateItems(dt); if (S.mode === 'over') return;
+  updateCrane(dt); if (S.mode === 'over') return;
+  updateShip(dt);
+  for (const f of S.fallers) { f.vy += 700 * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.rot += f.vr * dt; }
+  S.fallers = S.fallers.filter(f => f.y < H + 80);
+}
+
+// ---------- Draw ----------
+function txt(s, x, y, font, col, align) {
+  ctx.font = font; ctx.fillStyle = col; ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(s, x, y);
+}
+function drawFruit(g, kind, x, y, w, h) {
+  const cx = x + w / 2, cy = y + h / 2, TAU = 6.2832;
+  g.save(); g.lineWidth = 1.5; g.strokeStyle = C.ink; g.lineJoin = 'round';
+  const ell = (ex, ey, rx, ry, col, rot) => { g.beginPath(); g.ellipse(ex, ey, rx, ry, rot || 0, 0, TAU); g.fillStyle = col; g.fill(); g.stroke(); };
+  if (kind === 'lemon') {
+    ell(x + 3.5, cy, 3, 3, '#FFFA1E'); ell(x + w - 3.5, cy, 3, 3, '#FFFA1E');
+    ell(cx, cy, w / 2 - 4, h / 2 - 1, '#FFFA1E');
+  } else if (kind === 'orange') {
+    ell(cx, cy + 1, w / 2 - 1, h / 2 - 2, '#FFA400');
+    ell(cx + 5, y + 4, 6, 3, C.leaf, -0.5);
+  } else if (kind === 'banana') {
+    g.beginPath(); g.moveTo(x + 2, y + 3); g.quadraticCurveTo(cx, y + h * 1.55, x + w - 2, y + 2);
+    g.quadraticCurveTo(cx, y + h * 0.75, x + 2, y + 3); g.closePath();
+    g.fillStyle = '#FFDA46'; g.fill(); g.stroke();
+  } else if (kind === 'melon') {
+    g.beginPath(); g.ellipse(cx, cy, w / 2 - 1, h / 2 - 1, 0, 0, TAU); g.fillStyle = C.leaf; g.fill();
+    g.save(); g.clip(); g.fillStyle = C.leafDark;
+    for (let i = -2; i <= 2; i++) { g.beginPath(); g.ellipse(cx + i * 11, cy, 2.5, h / 2, 0, 0, TAU); g.fill(); }
+    g.restore();
+    g.beginPath(); g.ellipse(cx, cy, w / 2 - 1, h / 2 - 1, 0, 0, TAU); g.stroke();
+    g.beginPath(); g.arc(cx, cy, 9, 0, TAU); g.fillStyle = '#B4FED4'; g.fill();
+  } else if (kind === 'pineapple') {
+    g.beginPath(); g.moveTo(cx - 9, y + 19); g.lineTo(cx - 8, y + 5); g.lineTo(cx - 3, y + 12); g.lineTo(cx, y + 1);
+    g.lineTo(cx + 3, y + 12); g.lineTo(cx + 8, y + 5); g.lineTo(cx + 9, y + 19); g.closePath();
+    g.fillStyle = C.leaf; g.fill(); g.stroke();
+    const by = y + h - 18;
+    g.beginPath(); g.ellipse(cx, by, w / 2 - 1, 17, 0, 0, TAU); g.fillStyle = '#FFC61B'; g.fill();
+    g.save(); g.clip(); g.strokeStyle = '#BB5502'; g.lineWidth = 1;
+    for (let i = -4; i <= 4; i++) {
+      g.beginPath(); g.moveTo(cx + i * 8 - 18, by - 18); g.lineTo(cx + i * 8 + 18, by + 18); g.stroke();
+      g.beginPath(); g.moveTo(cx + i * 8 + 18, by - 18); g.lineTo(cx + i * 8 - 18, by + 18); g.stroke();
+    }
+    g.restore();
+    g.beginPath(); g.ellipse(cx, by, w / 2 - 1, 17, 0, 0, TAU); g.stroke();
+    g.beginPath(); g.arc(cx, cy, 8, 0, TAU); g.fillStyle = '#FFC61B'; g.fill();
+  } else if (kind === 'strawberry') {
+    g.beginPath(); g.moveTo(cx, y + h - 1);
+    g.bezierCurveTo(x - 3, y + h * 0.55, x + 1, y + 4, cx, y + 7);
+    g.bezierCurveTo(x + w - 1, y + 4, x + w + 3, y + h * 0.55, cx, y + h - 1); g.closePath();
+    g.fillStyle = '#FF6872'; g.fill(); g.stroke();
+    ell(cx, y + 5, 8, 3.5, C.leaf);
+    g.fillStyle = '#FFFA1E';
+    [[-7, -1], [7, -1], [-4, 7], [4, 7]].forEach(d => { g.beginPath(); g.arc(cx + d[0], cy + d[1], 1.3, 0, TAU); g.fill(); });
+  } else if (kind === 'duck') {
+    ell(cx - 2, y + h - 13, w / 2 - 3, 12, '#FFDA46');
+    g.beginPath(); g.moveTo(x + w - 5, y + 8); g.lineTo(x + w - 0.5, y + 12); g.lineTo(x + w - 5, y + 15); g.closePath();
+    g.fillStyle = '#E27B00'; g.fill(); g.stroke();
+    ell(x + w - 13, y + 11, 9.5, 9.5, '#FFDA46');
+    g.fillStyle = C.ink; g.beginPath(); g.arc(x + w - 10, y + 9, 1.7, 0, TAU); g.fill();
+  } else { g.fillStyle = C.orange; g.fillRect(x, y, w, h); }
+  g.restore();
+}
+function drawItem(it, x, y) {
+  drawFruit(ctx, it.kind, x, y, it.w, it.h);
+  txt(String(it.t), x + it.w / 2, y + it.h / 2 + 1, '700 12px ' + SANS, C.ink);
+}
+function drawBox(box, x, y, s) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  ctx.fillStyle = C.bgSoft; ctx.fillRect(WALL, 0, INNER_W, INNER_H);
+  ctx.save(); ctx.beginPath(); ctx.rect(WALL, -400, INNER_W, 400 + INNER_H); ctx.clip();
+  for (const it of box.items) drawItem(it, WALL + it.rx, INNER_H - it.ry - it.h - it.off);
+  ctx.restore();
+  ctx.fillStyle = C.ink;
+  ctx.fillRect(0, 0, WALL, CH); ctx.fillRect(CW - WALL, 0, WALL, CH); ctx.fillRect(0, CH - FLOORT, CW, FLOORT);
+  ctx.restore();
+}
+function drawShipContainer(x, y, t, col) { // centered x, top y
+  col = col || C.n900;
+  ctx.fillStyle = col; ctx.fillRect(x - SW / 2, y, SW, SH);
+  ctx.fillStyle = 'rgba(0,0,0,.28)';
+  for (let i = 1; i < 7; i++) ctx.fillRect(x - SW / 2 + i * 12 - 1, y + 5, 1, SH - 10);
+  ctx.fillStyle = col; ctx.fillRect(x - 22, y + 14, 44, 24);
+  txt(t + ' t', x, y + SH / 2 + 1, '600 15px ' + SANS, C.white);
+  ctx.fillStyle = C.white; ctx.fillRect(x - SW / 2, y, SW, 1);
+}
+
+function drawShip() {
+  const sh = S.ship;
+  ctx.save();
+  ctx.translate(SHIP_CX + sh.x, DECK_Y); ctx.rotate(sh.tilt * Math.PI / 180);
+  // hull
+  ctx.fillStyle = C.ink;
+  ctx.beginPath(); ctx.moveTo(-196, 0); ctx.lineTo(196, 0); ctx.lineTo(172, 62); ctx.lineTo(-172, 62); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = C.white; ctx.fillRect(-190, 22, 380, 1);
+  for (let i = 0; i < 4; i++) txt(String(i + 1), slotX(i), 12, '600 12px ' + SANS, C.n300);
+  txt('MS Zukunftstag', 0, 34, '500 11px ' + HEAD, C.n400);
+  // containers
+  sh.stacks.forEach((st, i) => st.forEach((c, k) => {
+    let lx = slotX(i), ly = -(k + 1) * SH;
+    if (sh.state === 'capsizing') {
+      lx += sh.capDir * sh.slide * (1 + k * 0.25);
+      const over = Math.abs(lx) - 190; if (over > 0) ly += over * 1.4;
+    }
+    drawShipContainer(lx, ly, c.t, c.col);
+  }));
+  // slot choice
+  if (S.mode === 'choose' && sh.state === 'docked') {
+    const t = S.box.tons;
+    for (let i = 0; i < 4; i++) {
+      const e = evalSlot(i, t), n = sh.stacks[i].length, x = slotX(i), y = -(n + 1) * SH;
+      if (e.full) continue;
+      const on = i === S.sel;
+      ctx.setLineDash(on ? [] : [4, 4]); ctx.lineWidth = on ? 2 : 1;
+      ctx.strokeStyle = on ? C.ink : C.n600;
+      if (on) { ctx.fillStyle = C.white; ctx.fillRect(x - SW / 2, y, SW, SH); }
+      ctx.strokeRect(x - SW / 2 + 1, y + 1, SW - 2, SH - 2);
+      ctx.setLineDash([]);
+      if (on) {
+        const bad = e.topple || e.capsize;
+        txt(t + ' t', x, y + SH / 2 + 1, '600 15px ' + SANS, C.ink);
+        const label = e.topple ? 'kippt' : e.capsize ? 'Schlagseite' : 'passt';
+        ctx.font = '600 12px ' + SANS;
+        const lw = ctx.measureText(label).width + 14;
+        ctx.fillStyle = bad ? C.red : C.green; ctx.fillRect(x - lw / 2, y - 26, lw, 20);
+        txt(label, x, y - 15, '600 12px ' + SANS, C.white);
+      }
+    }
+  }
+  ctx.restore();
+}
+
+function drawGauge() {
+  const cx = SHIP_CX, y = 534, half = 150;
+  const m = clamp(moment(S.ship.stacks) / LIMIT, -1.15, 1.15);
+  txt('Schlagseite', cx, y - 14, '500 11px ' + SANS, C.ink);
+  ctx.fillStyle = C.ink; ctx.fillRect(cx - half, y, half * 2, 1);
+  ctx.fillStyle = C.red; ctx.fillRect(cx - half - 16, y - 2, 16, 6); ctx.fillRect(cx + half, y - 2, 16, 6);
+  ctx.fillStyle = C.ink; ctx.fillRect(cx - 0.5, y - 5, 1, 12);
+  if (S.mode === 'choose') {
+    const e = evalSlot(S.sel, S.box.tons);
+    if (!e.full) {
+      const pm = clamp(e.m / LIMIT, -1.15, 1.15);
+      ctx.strokeStyle = e.capsize || e.topple ? C.red : C.ink; ctx.lineWidth = 1.5;
+      ctx.strokeRect(cx + pm * half - 5, y - 6, 10, 14);
+    }
+  }
+  ctx.fillStyle = Math.abs(m) > 0.7 ? C.red : C.ink;
+  ctx.fillRect(cx + m * half - 4, y - 5, 8, 12);
+}
+
+function drawCrane() {
+  const cr = S.crane, job = cr.job;
+  ctx.fillStyle = C.ink;
+  ctx.fillRect(30, BEAM - 10, 912, 10);
+  ctx.fillRect(40, BEAM, 6, QUAY - BEAM); ctx.fillRect(526, BEAM, 6, QUAY - BEAM);
+  ctx.fillRect(cr.x - 20, BEAM, 40, 10);
+  ctx.fillRect(cr.x - 0.75, BEAM + 10, 1.5, Math.max(0, cr.y - BEAM - 14));
+  const cargo = job && job.cargo, s = cargo ? job.s : SW / CW;
+  ctx.fillRect(cr.x - CW * s / 2, cr.y - 4, CW * s, 4);
+  if (cargo) drawBox(cargo, cr.x - CW * s / 2, cr.y, s);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+  if (!S) { drawIdle(); return; }
+  if (S.voyage) { drawVoyage(); return; }
+  drawShip();
+  for (const f of S.fallers) {
+    ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot); drawShipContainer(0, -SH / 2, f.t, f.col); ctx.restore();
+  }
+  for (const it of S.items) if (it.state === 'lost') drawItem(it, it.x, it.y);
+  drawScenery();
+  for (const it of S.items) if (it.state === 'floor') { ctx.globalAlpha = clamp(it.life, 0, 1); drawItem(it, it.x, it.y); ctx.globalAlpha = 1; }
+  // quay container
+  const box = S.box;
+  drawBox(box, box.x, QUAY - CH, 1);
+  const f = fillOf(box);
+  txt(box.tons + ' t', box.x + CW / 2, QUAY + 20, '600 14px ' + SANS, C.ink);
+  if (f >= MIN_FILL && S.mode === 'play') { ctx.fillStyle = C.ink; ctx.fillRect(box.x, QUAY + 34, CW, 2); }
+  for (const it of S.items) if (it.state === 'fall') drawItem(it, it.x, it.y);
+  drawCrane();
+  drawGauge();
+  for (const fx of S.fx) { ctx.globalAlpha = clamp(fx.life, 0, 1); txt(fx.text, fx.x, fx.y, '500 36px ' + HEAD, C.ink); ctx.globalAlpha = 1; }
+}
+function drawScenery() {
+  ctx.fillStyle = C.sun; ctx.beginPath(); ctx.arc(884, 132, 34, 0, 6.2832); ctx.fill();
+  ctx.fillStyle = C.water; ctx.fillRect(0, WATER, W, H - WATER);
+  ctx.fillStyle = C.waterLine; ctx.fillRect(0, WATER, W, 1);
+  ctx.fillStyle = C.quay; ctx.fillRect(0, QUAY, QUAY_R, H - QUAY);
+  ctx.fillStyle = C.ink; ctx.fillRect(0, QUAY, QUAY_R, 2);
+  // house with blackboard behind the quay
+  ctx.fillStyle = '#FFF5C5'; ctx.fillRect(70, 300, 262, QUAY - 300);
+  ctx.fillStyle = '#FA3340'; ctx.beginPath(); ctx.moveTo(54, 302); ctx.lineTo(201, 222); ctx.lineTo(348, 302); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = C.ink; ctx.fillRect(70, 300, 262, 2);
+  ctx.fillStyle = '#BB5502'; ctx.fillRect(84, 326, 186, 92);
+  ctx.fillStyle = C.leafDark; ctx.fillRect(90, 332, 174, 80);
+  txt('Die Früchte müssen', 177, 360, '600 16px ' + SANS, C.white);
+  txt('eingeladen werden.', 177, 384, '600 16px ' + SANS, C.white);
+  ctx.fillStyle = '#028AC7'; ctx.fillRect(284, 392, 36, QUAY - 392);
+  ctx.fillStyle = C.sun; ctx.beginPath(); ctx.arc(312, 432, 3, 0, 6.2832); ctx.fill();
+  ctx.fillStyle = C.ink; ctx.fillRect(QUAY_R - 1, QUAY, 1, H - QUAY);
+}
+function drawIdle() {
+  drawScenery();
+  ctx.fillStyle = C.ink;
+  ctx.fillRect(30, BEAM - 10, 912, 10); ctx.fillRect(40, BEAM, 6, QUAY - BEAM); ctx.fillRect(526, BEAM, 6, QUAY - BEAM);
+}
+
+// ---------- Legend ----------
+TYPES.forEach(ty => {
+  const row = document.createElement('div'), c = document.createElement('canvas'), d = 2;
+  c.width = 60 * d; c.height = 56 * d; c.style.cssText = 'width:60px;height:56px;flex:none;aspect-ratio:auto;cursor:default';
+  const g = c.getContext('2d'); g.scale(d, d);
+  drawFruit(g, ty.kind, (60 - ty.w) / 2, (56 - ty.h) / 2, ty.w, ty.h);
+  row.append(c, document.createTextNode(ty.name + ', ' + ty.t + ' t'));
+  $('legend').appendChild(row);
+});
+
+// ---------- HUD ----------
+const cache = {};
+function setText(node, key, v) { if (cache[key] !== v) { cache[key] = v; node.textContent = v; } }
+function hud() {
+  setText(el.best, 'best', String(Math.max(best, S ? S.score : 0)));
+  if (!S) { renderLives(MAX_LIVES); return; }
+  setText(el.score, 'score', String(S.score));
+  setText(el.ship, 'ship', String(S.shipNo));
+  const sh = S.ship, secs = Math.ceil(sh.timer);
+  setText(el.time, 'time', S.voyage ? 'auf See' : sh.state === 'docked' ? secs + ' s' : sh.state === 'arriving' ? 'legt an' : '–');
+  const low = sh.state === 'docked' && secs <= 10;
+  if (cache.low !== low) { cache.low = low; el.time.classList.toggle('low', low); }
+  renderLives(S.lives);
+  const f = Math.min(1, fillOf(S.box)), pct = Math.round(f * 100);
+  setText(el.fillTxt, 'fill', pct + ' % · ' + S.box.tons + ' t');
+  if (cache.pct !== pct) { cache.pct = pct; el.fillB.style.width = pct + '%'; el.fillBar.setAttribute('aria-valuenow', pct); }
+  const playing = S.mode !== 'over';
+  el.crane.disabled = !canCrane();
+  el.depart.disabled = !(playing && !S.paused && sh.state === 'docked' && !S.crane.job && S.mode !== 'lift');
+  el.pause.disabled = !playing;
+}
+function renderLives(n) {
+  if (cache.lives === n) return; cache.lives = n;
+  el.lives.innerHTML = '';
+  for (let i = 0; i < MAX_LIVES; i++) { const p = document.createElement('i'); if (i >= n) p.className = 'off'; el.lives.appendChild(p); }
+  el.lives.setAttribute('aria-label', n + ' von ' + MAX_LIVES);
+}
+
+// ---------- Input ----------
+function canvasX(e) { const r = cv.getBoundingClientRect(); return (e.clientX - r.left) / r.width * W; }
+function slotAt(x) { const i = Math.floor((x - (SHIP_CX - 2 * SLOT)) / SLOT); return i >= 0 && i < 4 ? i : -1; }
+function pointer(e) {
+  if (!S || S.paused) return;
+  if (S.voyage) { const r = cv.getBoundingClientRect(); S.voyage.ty = clamp((e.clientY - r.top) / r.height * H, VY0, VY1); S.voyage.keyMode = false; return; }
+  const x = canvasX(e);
+  if (S.mode === 'choose') { const i = slotAt(x); if (i >= 0 && S.ship.stacks[i].length < MAX_STACK) S.sel = i; }
+  else S.target = clamp(x - CW / 2, BOX_MIN, BOX_MAX);
+}
+cv.addEventListener('pointermove', pointer);
+cv.addEventListener('pointerdown', pointer);
+cv.addEventListener('click', e => {
+  if (!S || S.mode !== 'choose') return;
+  const i = slotAt(canvasX(e));
+  if (i >= 0) confirmSlot(i);
+});
+el.crane.addEventListener('click', callCrane);
+el.depart.addEventListener('click', () => depart(false));
+el.pause.addEventListener('click', togglePause);
+el.ovBtn.addEventListener('click', () => { if (S && S.paused) togglePause(); else start(); });
+
+window.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key;
+  const overlayOpen = !el.overlay.hidden;
+  if (overlayOpen) {
+    if ((k === 'p' || k === 'P') && S && S.paused) { togglePause(); e.preventDefault(); }
+    return; // the focused button handles Enter and Space
+  }
+  if (!S) return;
+  if (S.voyage) {
+    if (k === 'ArrowUp' || k === 'w' || k === 'W') { S.keys.up = true; e.preventDefault(); }
+    else if (k === 'ArrowDown' || k === 's' || k === 'S') { S.keys.down = true; e.preventDefault(); }
+    else if (k === ' ') { if (!e.repeat) planeCrash(); e.preventDefault(); }
+    else if (k === 'p' || k === 'P') togglePause();
+    return;
+  }
+  if (k === 'ArrowLeft' || k === 'a' || k === 'A') { if (S.mode === 'choose') { if (!e.repeat) moveSel(-1); } else S.keys.left = true; e.preventDefault(); }
+  else if (k === 'ArrowRight' || k === 'd' || k === 'D') { if (S.mode === 'choose') { if (!e.repeat) moveSel(1); } else S.keys.right = true; e.preventDefault(); }
+  else if (k === ' ' || k === 'Enter') {
+    if (e.repeat) { e.preventDefault(); return; }
+    if (S.mode === 'choose') confirmSlot(S.sel); else if (k === ' ') callCrane();
+    e.preventDefault();
+  }
+  else if (k >= '1' && k <= '4') { if (S.mode === 'choose') confirmSlot(+k - 1); }
+  else if (k === 'Escape') cancelChoose();
+  else if (k === 's' || k === 'S') depart(false);
+  else if (k === 'p' || k === 'P') togglePause();
+});
+window.addEventListener('keyup', e => {
+  if (!S) return;
+  if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') S.keys.left = false;
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') S.keys.right = false;
+  if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') S.keys.up = false;
+  if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') S.keys.down = false;
+});
+window.addEventListener('blur', () => { if (S) S.keys = {}; });
+document.addEventListener('visibilitychange', () => { if (document.hidden && S && S.mode !== 'over' && !S.paused) togglePause(); });
+
+// ---------- Loop ----------
+let last = performance.now(), hold = false;
+function frame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000); last = now;
+  if (!hold) update(dt);
+  draw(); hud();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.__game = { get S() { return S; }, set hold(v) { hold = v; }, start, callCrane, confirmSlot, depart, update };
+})();
+</script>
+</body>
+</html>
